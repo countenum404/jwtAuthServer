@@ -2,14 +2,16 @@ package postgres
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 	"go.uber.org/fx"
 	"log"
 	"net/url"
 	"time"
 )
 
-var Module = fx.Module("postgres", fx.Provide(NewPostgresStorage, NewPostgresConfig, NewDataSourceUrl))
+var Module = fx.Module("postgres", fx.Provide(NewPostgresStorage, LoadNewPostgresConfig, NewDataSourceUrl))
 
 type Storage struct {
 	db *sql.DB
@@ -17,6 +19,7 @@ type Storage struct {
 
 func NewPostgresStorage(lc fx.Lifecycle, url DataSourceUrl) (*Storage, error) {
 	var db *sql.DB
+	log.Println(string(url))
 	for {
 		db, err := sql.Open("postgres", string(url))
 		if err != nil {
@@ -42,8 +45,21 @@ type Config struct {
 	SSLMode  string
 }
 
-func NewPostgresConfig(lc fx.Lifecycle) *Config {
-	return &Config{Proto: "postgres", Host: "db:5432", Path: "postgres", User: "postgres", Password: "1234", SSLMode: "disable"}
+func LoadNewPostgresConfig(lc fx.Lifecycle) (*Config, error) {
+	config := &Config{}
+
+	viper.SetConfigFile("config/postgres_config.yml")
+	viper.SetConfigType("yaml")
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
+
+	err = viper.Unmarshal(config)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
 }
 
 type DataSourceUrl string

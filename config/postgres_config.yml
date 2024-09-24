@@ -1,0 +1,6 @@
+proto: "postgres"
+host: "db:5432"
+path: "postgres"
+user: "postgres"
+password: "1234"
+sslmode: "disable"
