@@ -13,21 +13,25 @@ type Authenticator interface {
 }
 
 type AuthHandlers struct {
-	service service.UserService
+	userService  service.UserService
+	tokenService service.TokenService
+}
+
+func NewAuthHandlers(lc fx.Lifecycle, userService service.UserService, tokenService service.TokenService) *AuthHandlers {
+	return &AuthHandlers{userService: userService, tokenService: tokenService}
 }
 
 func (a *AuthHandlers) HandleCreateJWT(context *gin.Context) {
-	//TODO implement me
-
+	access, refresh, err := a.tokenService.CreateTokenPair(context.Query("guid"), context.ClientIP())
+	if err != nil {
+		context.JSON(http.StatusOK, gin.H{"message": err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"Access": access, "Refresh": refresh})
 }
 
 func (a *AuthHandlers) HandleRefreshJWT(context *gin.Context) {
-	//TODO implement me
-
-}
-
-func NewAuthHandlers(lc fx.Lifecycle, service service.UserService) *AuthHandlers {
-	return &AuthHandlers{service: service}
+	// To come up with workflow
 }
 
 func pong(c *gin.Context) {

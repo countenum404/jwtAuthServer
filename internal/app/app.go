@@ -4,7 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"jwtAuth/internal/api"
-	"jwtAuth/internal/service"
+	"jwtAuth/internal/service/token"
+	"jwtAuth/internal/service/user"
 	"jwtAuth/internal/storage"
 	"jwtAuth/internal/storage/postgres"
 )
@@ -18,9 +19,10 @@ func NewApp() *App {
 func (a *App) Run() {
 	gin.SetMode(gin.DebugMode)
 	fx.New(
+		token.Module,
+		user.Module,
 		postgres.Module,
 		storage.Module,
-		service.Module,
 		api.Module,
 	).Run()
 }

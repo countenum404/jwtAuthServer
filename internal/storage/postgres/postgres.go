@@ -18,22 +18,23 @@ type Storage struct {
 }
 
 func NewPostgresStorage(lc fx.Lifecycle, url DataSourceUrl) (*Storage, error) {
-	var db *sql.DB
+	var dbpointer *sql.DB
 	log.Println(string(url))
 	for {
 		db, err := sql.Open("postgres", string(url))
 		if err != nil {
 			return nil, err
 		}
-		log.Println("waiting for db")
+		log.Println("waiting for storage")
 		err = db.Ping()
 		if err == nil {
+			dbpointer = db
 			break
 		}
 		time.Sleep(time.Second)
 		continue
 	}
-	return &Storage{db: db}, nil
+	return &Storage{db: dbpointer}, nil
 }
 
 type Config struct {

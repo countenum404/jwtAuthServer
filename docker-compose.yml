@@ -16,7 +16,7 @@ services:
     image: postgres:latest
     environment:
       POSTGRES_PASSWORD: 1234
-      POSTGRES_DB: postgres
+      POSTGRES_DB: jwt
     ports:
       - "5432:5432"
     healthcheck:

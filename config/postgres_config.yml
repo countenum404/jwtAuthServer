@@ -1,6 +1,6 @@
 proto: "postgres"
-host: "db:5432"
-path: "postgres"
+host: "localhost:5432"
+path: "jwt"
 user: "postgres"
 password: "1234"
 sslmode: "disable"
