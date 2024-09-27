@@ -9,10 +9,12 @@ import (
 	"jwtAuth/internal/storage/token"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
 
 var Module = fx.Module("Service",
+	fx.Provide(NewJwtTTL),
 	fx.Provide(fx.Annotate(NewDefaultTokenService, fx.As(new(Service)))),
 )
 
@@ -24,10 +26,22 @@ type Service interface {
 type DefaultTokenService struct {
 	storage     token.Storage
 	userService user.Service
+	jwtTTL      time.Duration
 }
 
-func NewDefaultTokenService(storage token.Storage, userService user.Service) *DefaultTokenService {
-	return &DefaultTokenService{storage: storage, userService: userService}
+type JwtTTL time.Duration
+
+func NewJwtTTL() JwtTTL {
+	seconds, err := strconv.Atoi(os.Getenv("JWT_TTL"))
+	log.Println(seconds, "is jwt ttl")
+	if err != nil {
+		panic("JWT_TTL must be an integer (seconds)")
+	}
+	return JwtTTL(time.Duration(seconds) * time.Second)
+}
+
+func NewDefaultTokenService(storage token.Storage, userService user.Service, ttl JwtTTL) *DefaultTokenService {
+	return &DefaultTokenService{storage: storage, userService: userService, jwtTTL: time.Duration(ttl)}
 }
 
 func (d *DefaultTokenService) CreateTokenPair(guid, ip string) (string, string, error) {
@@ -50,11 +64,12 @@ func (d *DefaultTokenService) GetRefreshToken(guid string) (string, error) {
 }
 
 func (d *DefaultTokenService) createAccessToken(guid, ip, sessionId string) (string, error) {
+
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 		"sub":     guid,
 		"ip":      ip,
 		"session": sessionId,
-		"exp":     time.Now().Add(2 * time.Hour).Unix(),
+		"exp":     time.Now().Add(d.jwtTTL).Unix(),
 		"iat":     time.Now().Unix(),
 	})
 	signedString, err := claims.SignedString([]byte(os.Getenv("JWT_SECRET")))
