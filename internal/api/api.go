@@ -44,9 +44,15 @@ func NewJwtAuthApi(lc fx.Lifecycle, addr Addr, handlers Authenticator) *JwtAuthA
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
-				err := j.Run()
-				if err != nil {
+				err := func() error {
+					err := j.Run()
+					if err != nil {
 
+						return err
+					}
+					return nil
+				}()
+				if err != nil {
 				}
 			}()
 			return nil
