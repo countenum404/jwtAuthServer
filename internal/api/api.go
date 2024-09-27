@@ -47,12 +47,12 @@ func NewJwtAuthApi(lc fx.Lifecycle, addr Addr, handlers Authenticator) *JwtAuthA
 				err := func() error {
 					err := j.Run()
 					if err != nil {
-
 						return err
 					}
 					return nil
 				}()
 				if err != nil {
+					panic("[Cannot start application]: " + err.Error())
 				}
 			}()
 			return nil
