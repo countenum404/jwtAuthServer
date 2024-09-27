@@ -5,23 +5,28 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"go.uber.org/fx"
-	"jwtAuth/internal/service"
-	"jwtAuth/internal/storage"
+	"jwtAuth/internal/service/user"
+	"jwtAuth/internal/storage/token"
 	"log"
 	"os"
 	"time"
 )
 
-var Module = fx.Module("TokenService",
-	fx.Provide(fx.Annotate(NewDefaultTokenService, fx.As(new(service.TokenService)))),
+var Module = fx.Module("Service",
+	fx.Provide(fx.Annotate(NewDefaultTokenService, fx.As(new(Service)))),
 )
 
-type DefaultTokenService struct {
-	storage     storage.TokenStorage
-	userService service.UserService
+type Service interface {
+	CreateTokenPair(guid, ip string) (string, string, error)
+	GetRefreshToken(guid string) (string, error)
 }
 
-func NewDefaultTokenService(lc fx.Lifecycle, storage storage.TokenStorage, userService service.UserService) *DefaultTokenService {
+type DefaultTokenService struct {
+	storage     token.Storage
+	userService user.Service
+}
+
+func NewDefaultTokenService(storage token.Storage, userService user.Service) *DefaultTokenService {
 	return &DefaultTokenService{storage: storage, userService: userService}
 }
 

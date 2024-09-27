@@ -3,7 +3,8 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
-	"jwtAuth/internal/service"
+	"jwtAuth/internal/service/token"
+	"jwtAuth/internal/service/user"
 	"net/http"
 )
 
@@ -13,11 +14,11 @@ type Authenticator interface {
 }
 
 type AuthHandlers struct {
-	userService  service.UserService
-	tokenService service.TokenService
+	userService  user.Service
+	tokenService token.Service
 }
 
-func NewAuthHandlers(lc fx.Lifecycle, userService service.UserService, tokenService service.TokenService) *AuthHandlers {
+func NewAuthHandlers(lc fx.Lifecycle, userService user.Service, tokenService token.Service) *AuthHandlers {
 	return &AuthHandlers{userService: userService, tokenService: tokenService}
 }
 

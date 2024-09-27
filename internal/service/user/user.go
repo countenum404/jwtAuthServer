@@ -2,20 +2,23 @@ package user
 
 import (
 	"go.uber.org/fx"
-	"jwtAuth/internal/service"
-	"jwtAuth/internal/storage"
+	"jwtAuth/internal/storage/user"
 	"log"
 )
 
 var Module = fx.Module("UserService",
-	fx.Provide(fx.Annotate(NewDefaultUserService, fx.As(new(service.UserService)))),
+	fx.Provide(fx.Annotate(NewDefaultUserService, fx.As(new(Service)))),
 )
 
-type DefaultUserService struct {
-	storage storage.UserStorage
+type Service interface {
+	GetUser(guid string) string
 }
 
-func NewDefaultUserService(lc fx.Lifecycle, storage storage.UserStorage) *DefaultUserService {
+type DefaultUserService struct {
+	storage user.Storage
+}
+
+func NewDefaultUserService(lc fx.Lifecycle, storage user.Storage) *DefaultUserService {
 	return &DefaultUserService{storage: storage}
 }
 

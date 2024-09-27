@@ -11,10 +11,12 @@ import (
 	"time"
 )
 
-var Module = fx.Module("postgres", fx.Provide(NewPostgresStorage, LoadNewPostgresConfig, NewDataSourceUrl))
+var Module = fx.Module("postgres",
+	fx.Provide(NewPostgresStorage, LoadNewPostgresConfig, NewDataSourceUrl),
+)
 
 type Storage struct {
-	db *sql.DB
+	Db *sql.DB
 }
 
 func NewPostgresStorage(lc fx.Lifecycle, url DataSourceUrl) (*Storage, error) {
@@ -34,7 +36,7 @@ func NewPostgresStorage(lc fx.Lifecycle, url DataSourceUrl) (*Storage, error) {
 		time.Sleep(time.Second)
 		continue
 	}
-	return &Storage{db: dbpointer}, nil
+	return &Storage{Db: dbpointer}, nil
 }
 
 type Config struct {
