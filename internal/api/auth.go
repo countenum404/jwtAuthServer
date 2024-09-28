@@ -5,6 +5,8 @@ import (
 	"go.uber.org/fx"
 	"jwtAuth/internal/service/token"
 	"jwtAuth/internal/service/user"
+	"jwtAuth/internal/types"
+	"log"
 	"net/http"
 )
 
@@ -32,7 +34,16 @@ func (a *AuthHandlers) HandleCreateJWT(context *gin.Context) {
 }
 
 func (a *AuthHandlers) HandleRefreshJWT(context *gin.Context) {
-	// To come up with workflow
+	var refreshRequest types.RefreshRequest
+	if err := context.ShouldBindJSON(&refreshRequest); err != nil {
+		log.Println(err)
+	}
+	access, refresh, err := a.tokenService.RefreshTokenPair(refreshRequest.Access, refreshRequest.Refresh, context.ClientIP())
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+	context.JSON(http.StatusOK, gin.H{"Access": access, "Refresh": refresh})
 }
 
 func pong(c *gin.Context) {
