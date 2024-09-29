@@ -12,10 +12,19 @@ var Module = fx.Module("UserService",
 
 type Service interface {
 	GetUser(guid string) string
+	GetUserEmailById(guid string) (string, error)
 }
 
 type DefaultUserService struct {
 	storage user.Storage
+}
+
+func (u *DefaultUserService) GetUserEmailById(guid string) (string, error) {
+	id, err := u.storage.GetUserEmailById(guid)
+	if err != nil {
+		return "", err
+	}
+	return id, nil
 }
 
 func NewDefaultUserService(lc fx.Lifecycle, storage user.Storage) *DefaultUserService {

@@ -12,10 +12,21 @@ var Module = fx.Module("UserStorage",
 
 type Storage interface {
 	GetUser(username, password string) bool
+	GetUserEmailById(guid string) (string, error)
 }
 
 type DefaultUserStorage struct {
 	db *postgres.Storage
+}
+
+func (p DefaultUserStorage) GetUserEmailById(guid string) (string, error) {
+	query := "SELECT email FROM users WHERE id=$1;"
+	var email string
+	err := p.db.Db.QueryRow(query, guid).Scan(&email)
+	if err != nil {
+		return "", err
+	}
+	return email, err
 }
 
 func NewDefaultUserStorage(lc fx.Lifecycle, db *postgres.Storage) *DefaultUserStorage {
