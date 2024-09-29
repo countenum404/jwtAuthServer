@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"jwtAuth/internal/api"
+	"jwtAuth/internal/service/email"
 	tokenService "jwtAuth/internal/service/token"
 	userService "jwtAuth/internal/service/user"
 	"jwtAuth/internal/storage/postgres"
@@ -27,6 +28,8 @@ func (a *App) Run() {
 
 		userService.Module,
 		userStorage.Module,
+
+		email.Module,
 
 		api.Module,
 	).Run()

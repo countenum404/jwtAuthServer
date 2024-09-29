@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/fx"
 	"golang.org/x/crypto/bcrypt"
+	"jwtAuth/internal/service/email"
 	"jwtAuth/internal/service/user"
 	"jwtAuth/internal/storage/token"
 	"log"
@@ -27,9 +28,10 @@ type Service interface {
 }
 
 type DefaultTokenService struct {
-	storage     token.Storage
-	userService user.Service
-	jwtTTL      time.Duration
+	storage        token.Storage
+	userService    user.Service
+	warningService email.WarningService
+	jwtTTL         time.Duration
 }
 
 type JwtTTL time.Duration
@@ -43,8 +45,8 @@ func NewJwtTTL() JwtTTL {
 	return JwtTTL(time.Duration(seconds) * time.Second)
 }
 
-func NewDefaultTokenService(storage token.Storage, userService user.Service, ttl JwtTTL) *DefaultTokenService {
-	return &DefaultTokenService{storage: storage, userService: userService, jwtTTL: time.Duration(ttl)}
+func NewDefaultTokenService(lc fx.Lifecycle, storage token.Storage, userService user.Service, warningService email.WarningService, ttl JwtTTL) *DefaultTokenService {
+	return &DefaultTokenService{storage: storage, userService: userService, jwtTTL: time.Duration(ttl), warningService: warningService}
 }
 
 func (d *DefaultTokenService) CreateTokenPair(guid, ip string) (string, string, error) {
@@ -71,11 +73,23 @@ func (d *DefaultTokenService) RefreshTokenPair(access, refresh, ip string) (stri
 	guid := claims["sub"].(string)
 	refreshInDb, err := d.storage.GetRefreshToken(sessionId)
 	if err != nil {
-		return "", "", err
+		return "", "", nil
 	}
 
 	if claims["ip"].(string) != ip {
-		log.Println("sending warning email")
+		userEmail, err := d.userService.GetUserEmailById(guid)
+		if err != nil {
+			return "", "", err
+		}
+
+		err = d.warningService.SendWarning(
+			"Yours ip is changed. It was:"+claims["ip"].(string)+". It came"+ip,
+			"Auth key warning: yours ip changed",
+			userEmail,
+		)
+		if err != nil {
+			return "", "", err
+		}
 	}
 	log.Println(refresh, string(refreshInDb))
 	err = bcrypt.CompareHashAndPassword(refreshInDb, []byte(refresh))
@@ -110,7 +124,7 @@ func (d *DefaultTokenService) createAccessToken(guid, ip, sessionId string) (str
 	if err != nil {
 		return "", err
 	}
-	return signedString, err
+	return signedString, nil
 }
 
 func (d *DefaultTokenService) createRefreshToken(guid, ip string) string {
@@ -125,5 +139,5 @@ func (d *DefaultTokenService) parseRefreshToken(refresh string) (string, error) 
 	if err != nil {
 		return "", err
 	}
-	return buffer.String(), err
+	return buffer.String(), nil
 }
