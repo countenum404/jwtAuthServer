@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS users
 CREATE TABLE IF NOT EXISTS tokens
 (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    refresh_token BYTEA not null,
+    refresh_token TEXT not null,
     session_id UUID,
     user_id UUID REFERENCES users(id)
 );

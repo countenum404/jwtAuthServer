@@ -9,3 +9,16 @@ type User struct {
 	Email    string
 	Password string
 }
+
+type RefreshRequest struct {
+	Access  string `json:"Access"`
+	Refresh string `json:"Refresh"`
+}
+
+type RefreshContext struct {
+	Guid            string
+	OldRefresh      string
+	NewRefreshToken string
+	OldSession      string
+	NewSession      string
+}
