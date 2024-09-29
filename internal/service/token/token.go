@@ -66,28 +66,18 @@ func (d *DefaultTokenService) RefreshTokenPair(access, refresh, ip string) (stri
 	_, err := jwt.ParseWithClaims(access, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
-	if err != nil {
-		return "", "", err
-	}
 
 	sessionId := claims["session"].(string)
 	guid := claims["sub"].(string)
-	_, refreshInDb, err := d.storage.GetRefreshToken(guid, sessionId)
+	refreshInDb, err := d.storage.GetRefreshToken(sessionId)
 	if err != nil {
 		return "", "", err
-	}
-	refreshSession, _, err := d.storage.GetSessionIdByRefresh(refresh)
-	if err != nil {
-		return "", "", err
-	}
-	if refreshSession != sessionId {
-		return "", "", errors.New("access and refresh issue")
 	}
 
 	if claims["ip"].(string) != ip {
 		log.Println("sending warning email")
 	}
-
+	log.Println(refresh, string(refreshInDb))
 	err = bcrypt.CompareHashAndPassword(refreshInDb, []byte(refresh))
 	if err != nil {
 		return "", "", errors.New("refresh token invalid")
@@ -100,7 +90,7 @@ func (d *DefaultTokenService) RefreshTokenPair(access, refresh, ip string) (stri
 	}
 	newRefresh := d.createRefreshToken(guid, ip)
 
-	err = d.storage.UpdateRefreshToken(guid, newRefresh, sessionId, newSessionId)
+	err = d.storage.UpdateRefreshToken(newRefresh, sessionId, newSessionId)
 	if err != nil {
 		return "", "", err
 	}
@@ -131,6 +121,9 @@ func (d *DefaultTokenService) createRefreshToken(guid, ip string) string {
 
 func (d *DefaultTokenService) parseRefreshToken(refresh string) (string, error) {
 	var buffer bytes.Buffer
-	base64.StdEncoding.Decode([]byte(refresh), buffer.Bytes())
-	return buffer.String(), nil
+	_, err := base64.StdEncoding.Decode([]byte(refresh), buffer.Bytes())
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), err
 }

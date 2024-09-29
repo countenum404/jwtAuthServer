@@ -14,9 +14,8 @@ var Module = fx.Module("TokenStorage",
 )
 
 type Storage interface {
-	GetRefreshToken(guid, sessionId string) (string, []byte, error)
-	GetSessionIdByRefresh(refresh string) (string, string, error)
-	UpdateRefreshToken(guid, refresh, sessionId, newSessionId string) error
+	GetRefreshToken(sessionId string) ([]byte, error)
+	UpdateRefreshToken(newRefresh, oldSessionId, newSessionId string) error
 	SaveRefreshToken(guid, refreshToken, sessionId string) error
 }
 
@@ -28,73 +27,55 @@ func NewDefaultTokenStorage(lc fx.Lifecycle, storage *postgres.Storage) *Default
 	return &DefaultTokenStorage{storage: storage}
 }
 
-func (t *DefaultTokenStorage) GetRefreshToken(guid, sessionId string) (string, []byte, error) {
-	log.Println("GetRefreshToken", guid, sessionId)
-	query := "SELECT id, refresh_token FROM tokens WHERE user_id=$1 AND session_id=$2"
-
-	var id uuid.UUID
+func (t *DefaultTokenStorage) GetRefreshToken(sessionId string) ([]byte, error) {
+	log.Println("GetRefreshToken", sessionId)
+	query := "SELECT refresh_token FROM tokens WHERE session_id=$1"
 	var refreshToken []byte
-	err := t.storage.Db.QueryRow(query, guid, sessionId).Scan(&id, &refreshToken)
+	err := t.storage.Db.QueryRow(query, sessionId).Scan(&refreshToken)
 	if err != nil {
-		return "", nil, errors.New("user hasn't such refresh token")
+		log.Println(err)
+		return nil, errors.New("user hasn't such refresh token")
 	}
 
-	return id.String(), refreshToken, err
+	return refreshToken, err
 }
 
-func (t *DefaultTokenStorage) GetSessionIdByRefresh(refresh string) (string, string, error) {
-	log.Println("GetSessionIdByRefresh", refresh)
+func (t *DefaultTokenStorage) UpdateRefreshToken(newRefresh, oldSessionId, newSessionId string) error {
+	log.Println("UpdateRefreshToken", "newRefresh:", newRefresh, "oldSessionId:", oldSessionId, "newSessionId:", newSessionId)
 
-	_, err := bcrypt.GenerateFromPassword([]byte(refresh), bcrypt.DefaultCost)
+	queryUpdateRefreshToken := "UPDATE tokens SET refresh_token=$1 WHERE session_id=$2"
+	queryUpdateSessionId := "UPDATE tokens SET session_id=$1 WHERE session_id=$2"
+
+	osid, err := uuid.Parse(oldSessionId)
 	if err != nil {
-		return "", "", err
+		return err
 	}
-
-	query := "SELECT user_id, session_id FROM tokens WHERE refresh_token=decode($1, 'hex')"
-
-	var sessionId, guid uuid.UUID
-	err = t.storage.Db.QueryRow(query, refresh).Scan(&guid, &sessionId)
-	if err != nil {
-		return "", "", err
-	}
-
-	return sessionId.String(), guid.String(), err
-}
-
-func (t *DefaultTokenStorage) UpdateRefreshToken(guid, refresh, sessionId, newSessionId string) error {
-	log.Println("UpdateRefreshToken", guid, refresh, sessionId, newSessionId)
-
-	query := "UPDATE tokens SET refresh_token=$1, session_id=$2 WHERE user_id=$3 AND session_id=$4"
-
-	ssid, err := uuid.Parse(sessionId)
+	nsid, err := uuid.Parse(newSessionId)
 	if err != nil {
 		return err
 	}
 
-	userId, err := uuid.Parse(guid)
+	bcryptRefresh, err := bcrypt.GenerateFromPassword([]byte(newRefresh), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
 
-	bcryptRefresh, err := bcrypt.GenerateFromPassword([]byte(refresh), bcrypt.DefaultCost)
+	_, err = t.storage.Db.Exec(queryUpdateRefreshToken, bcryptRefresh, oldSessionId)
 	if err != nil {
 		return err
 	}
 
-	newSsid, err := uuid.Parse(sessionId)
+	_, err = t.storage.Db.Exec(queryUpdateSessionId, nsid, osid)
 	if err != nil {
 		return err
 	}
 
-	_, err = t.storage.Db.Exec(query, bcryptRefresh, newSsid, userId, ssid)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (t *DefaultTokenStorage) SaveRefreshToken(guid, refreshToken, sessionId string) error {
-	query := "INSERT INTO tokens(refresh_token, session_id, user_id) VALUES ($1::bytea, $2, $3)"
+	log.Println("refreshToken", refreshToken)
+	query := "INSERT INTO tokens(refresh_token, session_id, user_id) VALUES ($1, $2, $3)"
 
 	userUUID, err := uuid.Parse(guid)
 	if err != nil {
