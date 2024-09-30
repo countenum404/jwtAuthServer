@@ -19,4 +19,4 @@ CREATE TABLE IF NOT EXISTS tokens
 );
 
 INSERT INTO users(fisrtname, lastname, username, email, pwd) VALUES
-('Terry', 'Davis', 'tdavis', 'tdavis@gmail.com','c3VwZXJwYXNzd29yZA==');
+('Terry', 'Davis', 'tdavis', 'd.shabashovqa@gmail.com','c3VwZXJwYXNzd29yZA==');
