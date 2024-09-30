@@ -23,7 +23,7 @@ Will refresh your key pair
 #### body
 ``` json
 {
-   "Access": "{{access key you have got}},
+   "Access": "{{access key you have got}}",
    "Refresh": "{{refresh key you have got}}"
 }
 ```
