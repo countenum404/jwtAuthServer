@@ -48,4 +48,4 @@ curl --location --request PUT 'http://192.168.31.76:8080/auth' \
 }'
 ```
 
-Author: @countenum404
+Author: `@countenum404`, Denis Shabashov
